@@ -4,7 +4,7 @@ import { logger } from './lib/logger';
 import { prisma } from './lib/prisma';
 import { redis } from './lib/redis';
 
-const PORT = parseInt(process.env.APP_PORT ?? '3000', 10);
+const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
 async function bootstrap(): Promise<void> {
   try {
@@ -13,7 +13,7 @@ async function bootstrap(): Promise<void> {
 
     const app = createApp();
 
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       logger.info({ port: PORT, env: process.env.NODE_ENV }, 'UJRIS Lite v3.0.0 started');
     });
 
