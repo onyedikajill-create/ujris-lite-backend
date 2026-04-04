@@ -1,0 +1,229 @@
+// UJRIS Lite v3.0.0 - Unified Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CaseStatus {
+  INTAKE
+  EVIDENCE_PENDING
+  GENERATING
+  ACTIVE
+  RESOLVED
+  CLOSED
+  REFUND_REQUESTED
+  REFUNDED
+}
+
+enum RefundStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+enum EvidenceType {
+  DOCUMENT
+  IMAGE
+  PDF
+  TEXT
+  OTHER
+}
+
+enum DecisionType {
+  APPEAL
+  COMPLAINT
+  DISPUTE
+  TRIBUNAL
+  ARBITRATION
+  MEDIATION
+  FORMAL_GRIEVANCE
+  OTHER
+}
+
+enum GroundsType {
+  DISCRIMINATION
+  BREACH_OF_CONTRACT
+  UNFAIR_DISMISSAL
+  NEGLIGENCE
+  PROCEDURAL_IRREGULARITY
+  HUMAN_RIGHTS_VIOLATION
+  CONSUMER_RIGHTS
+  DATA_PROTECTION
+  OTHER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          String   @default("user")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cases         Case[]
+  tokens        AuthToken[]
+
+  @@index([email])
+}
+
+model AuthToken {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  revokedAt  DateTime?
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Case {
+  id                  String       @id @default(cuid())
+  userId              String
+  status              CaseStatus   @default(INTAKE)
+  refundStatus        RefundStatus @default(NONE)
+
+  // Intake fields - merged v1 + v2
+  title               String
+  description         String       @db.Text
+  decisionType        DecisionType @default(OTHER)
+  grounds             GroundsType  @default(OTHER)
+  desiredOutcome      String?      @db.Text
+  jurisdiction        String?
+  opposingParty       String?
+  incidentDate        DateTime?
+  submissionDeadline  DateTime?
+
+  // Intake enrichment
+  intakeData          Json?        // full structured intake answers
+  nextQuestions       Json?        // dynamic follow-up questions
+  intakeComplete      Boolean      @default(false)
+
+  // Case generation outputs
+  caseDocument        String?      @db.Text
+  executiveSummary    String?      @db.Text
+  legalArguments      Json?
+  recommendedActions  Json?
+  strengthScore       Int?         // 0-100
+  riskAssessment      String?      @db.Text
+  generatedAt         DateTime?
+
+  // Evidence summary - v1 merged
+  evidenceSummary     String?      @db.Text
+  evidenceSummaryAt   DateTime?
+
+  // Refund logic - v1 merged
+  refundReason        String?      @db.Text
+  refundRequestedAt   DateTime?
+  refundApprovedAt    DateTime?
+  refundProcessedAt   DateTime?
+  refundAmount        Float?
+  refundAmountCurrency String?     @default("GBP")
+  refundEligible      Boolean?
+  refundNotes         String?      @db.Text
+
+  // Metadata
+  aiModel             String?
+  aiTokensUsed        Int?
+  processingTimeMs    Int?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evidence            Evidence[]
+  auditLogs           AuditLog[]
+  refundRequests      RefundRequest[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([refundStatus])
+  @@index([createdAt])
+}
+
+model Evidence {
+  id              String       @id @default(cuid())
+  caseId          String
+  type            EvidenceType @default(DOCUMENT)
+  fileName        String
+  originalName    String
+  mimeType        String
+  sizeBytes       Int
+  storageKey      String       @unique
+  sha256Hash      String
+  extractedText   String?      @db.Text
+  summary         String?      @db.Text
+  metadata        Json?
+  uploadedAt      DateTime     @default(now())
+  processedAt     DateTime?
+
+  case            Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([sha256Hash])
+}
+
+model RefundRequest {
+  id              String       @id @default(cuid())
+  caseId          String
+  userId          String
+  status          RefundStatus @default(PENDING)
+  reason          String       @db.Text
+  requestedAmount Float
+  approvedAmount  Float?
+  currency        String       @default("GBP")
+  adminNotes      String?      @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  processedAt     DateTime?
+
+  case            Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  caseId      String?
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  adminKey    Boolean  @default(false)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  case        Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+
+  @@index([key])
+}
