@@ -19,6 +19,9 @@ const admin_1 = __importDefault(require("./routes/admin"));
 const auth_1 = __importDefault(require("./routes/auth"));
 function createApp() {
     const app = (0, express_1.default)();
+    app.get('/', (_req, res) => {
+        return res.redirect(302, '/health');
+    });
     app.get('/health', (_req, res) => {
         res.status(200).json({
             status: 'ok',

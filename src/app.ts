@@ -15,6 +15,19 @@ import authRouter from './routes/auth';
 export function createApp(): Application {
   const app = express();
 
+  app.get('/', (_req: Request, res: Response) => {
+    return res.redirect(302, '/health');
+  });
+
+  // Health check (no auth, no rate limit)
+  app.get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({
+      status: 'ok',
+      version: '3.0.0',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // Trust proxy (for rate limiting behind nginx/load balancer)
   app.set('trust proxy', 1);
 
@@ -85,15 +98,6 @@ export function createApp(): Application {
 
   // Global rate limiting
   app.use(globalRateLimiter);
-
-  // Health check (no auth, no rate limit)
-  app.get('/health', (_req: Request, res: Response) => {
-    res.status(200).json({
-      status: 'ok',
-      version: '3.0.0',
-      timestamp: new Date().toISOString(),
-    });
-  });
 
   // Routes
   app.use('/api/auth', authRouter);
