@@ -19,6 +19,13 @@ const admin_1 = __importDefault(require("./routes/admin"));
 const auth_1 = __importDefault(require("./routes/auth"));
 function createApp() {
     const app = (0, express_1.default)();
+    app.get('/health', (_req, res) => {
+        res.status(200).json({
+            status: 'ok',
+            version: '3.0.0',
+            timestamp: new Date().toISOString(),
+        });
+    });
     app.set('trust proxy', 1);
     app.use((0, helmet_1.default)({
         contentSecurityPolicy: {
@@ -72,13 +79,6 @@ function createApp() {
     app.use(express_1.default.json({ limit: '1mb' }));
     app.use(express_1.default.urlencoded({ extended: true, limit: '1mb' }));
     app.use(rateLimiter_1.globalRateLimiter);
-    app.get('/health', (_req, res) => {
-        res.status(200).json({
-            status: 'ok',
-            version: '3.0.0',
-            timestamp: new Date().toISOString(),
-        });
-    });
     app.use('/api/auth', auth_1.default);
     app.use('/api/cases', cases_1.default);
     app.use('/api/refunds', refunds_1.default);
