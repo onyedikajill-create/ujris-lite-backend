@@ -5,13 +5,13 @@ const app_1 = require("./app");
 const logger_1 = require("./lib/logger");
 const prisma_1 = require("./lib/prisma");
 const redis_1 = require("./lib/redis");
-const PORT = parseInt(process.env.PORT ?? '3000', 10);
+const PORT = parseInt(process.env.APP_PORT ?? '3000', 10);
 async function bootstrap() {
     try {
         await prisma_1.prisma.$connect();
         logger_1.logger.info('Database connected');
         const app = (0, app_1.createApp)();
-        const server = app.listen(PORT, "0.0.0.0", () => {
+        const server = app.listen(PORT, () => {
             logger_1.logger.info({ port: PORT, env: process.env.NODE_ENV }, 'UJRIS Lite v3.0.0 started');
         });
         const shutdown = async (signal) => {

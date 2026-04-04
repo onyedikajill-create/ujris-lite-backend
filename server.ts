@@ -13,9 +13,11 @@ async function bootstrap(): Promise<void> {
 
     const app = createApp();
 
-    const server = app.listen(PORT, "0.0.0.0", () => {
-      logger.info({ port: PORT, env: process.env.NODE_ENV }, 'UJRIS Lite v3.0.0 started');
-    });
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
     const shutdown = async (signal: string): Promise<void> => {
       logger.info({ signal }, 'Shutdown signal received');
