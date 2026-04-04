@@ -1,3 +1,4 @@
+// src/app.ts or wherever createApp lives
 import express, { Application, Request, Response } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -17,6 +18,13 @@ export function createApp(): Application {
 
   // Trust proxy (for rate limiting behind nginx/load balancer)
   app.set('trust proxy', 1);
+
+  // --- Debug middleware (lightweight) ---
+  // Logs method and path so you can confirm edge requests reach Express
+  app.use((req, _res, next) => {
+    logger.info({ method: req.method, url: req.originalUrl }, '[REQ] incoming request');
+    next();
+  });
 
   // Security headers
   app.use(
@@ -91,6 +99,15 @@ export function createApp(): Application {
     res.status(200).json({
       status: 'ok',
       version: '3.0.0',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Root route so "/" returns 200 instead of your notFoundHandler
+  app.get('/', (_req: Request, res: Response) => {
+    res.status(200).json({
+      status: 'ok',
+      message: 'UJRIS API running',
       timestamp: new Date().toISOString(),
     });
   });
