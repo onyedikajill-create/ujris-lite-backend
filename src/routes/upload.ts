@@ -1,12 +1,10 @@
 import express from 'express';
 import multer from 'multer';
 import { randomBytes } from 'crypto';
+import { fileStore } from '../store';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
-
-// In-memory storage for MVP (replace with S3/R2 in production)
-const fileStore = new Map();
 
 router.post('/upload', upload.array('files'), async (req, res) => {
   try {
