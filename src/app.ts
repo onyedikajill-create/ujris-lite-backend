@@ -11,6 +11,7 @@ import casesRouter from './routes/cases';
 import refundsRouter from './routes/refunds';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
+import paymentsRouter from './routes/payments';
 
 export function createApp(): Application {
   const app = express();
@@ -104,6 +105,7 @@ export function createApp(): Application {
   app.use('/api/cases', casesRouter);
   app.use('/api/refunds', refundsRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/payments', paymentsRouter);
 
   // 404 handler
   app.use(notFoundHandler);
