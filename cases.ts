@@ -474,7 +474,7 @@ router.post(
 router.post(
   '/:caseId/evidence',
   requireCaseOwnership,
-  uploadMiddleware.array('files', 5),
+  uploadMiddleware.array('files', 10),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const files = req.files as Express.Multer.File[] | undefined;
