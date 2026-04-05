@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      target: production
+    container_name: ujris-lite-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ujris}:${POSTGRES_PASSWORD:-ujris_secret}@postgres:5432/${POSTGRES_DB:-ujris_lite}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-10}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ujris-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ujris-lite-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ujris}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ujris_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-ujris_lite}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ujris} -d ${POSTGRES_DB:-ujris_lite}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ujris-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ujris-lite-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ujris-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+
+networks:
+  ujris-network:
+    driver: bridge
